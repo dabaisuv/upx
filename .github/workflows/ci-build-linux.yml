@@ -38,7 +38,7 @@ jobs:
           uname -a; pwd; id; umask
           #cat /etc/os-release || true
           #env
-          if [[ ${{ matrix.os }} =~ ^ubuntu; then
+          if [[ ${{ matrix.os }} =~ ^ubuntu ]]; then
             export DEBIAN_FRONTEND=noninteractive
             if [[ $X =~ (^|\+)rebuild-stubs($|\+) || $C =~ ^(clang|gcc).*-m32$ ]]; then
               sudo dpkg --add-architecture i386
