@@ -29,7 +29,7 @@ jobs:
           wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
       - name: 'Checkout code'
         uses: actions/checkout@v2
-        with: { submodules: false }
+        with: { submodules: true }
       - name: 'Rebuild and verify stubs'
         run: |
           export C=gcc X=rebuild-stubs TRAVIS_OS_NAME=linux
@@ -43,10 +43,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: linux-clang-10-m32, os: ubuntu-20.04, C: clang-10-m32 }
-          - { name: linux-clang-10-m64, os: ubuntu-20.04, C: clang-10-m64 }
+          # { name: linux-clang-10-m32, os: ubuntu-20.04, C: clang-10-m32 }
+          # { name: linux-clang-10-m64, os: ubuntu-20.04, C: clang-10-m64 }
           - { name: linux-gcc-10-m32, os: ubuntu-20.04, C: gcc-10-m32 }
-          - { name: linux-gcc-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
+          # { name: linux-gcc-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
 
     steps:
       - name: 'Install extra packages'
@@ -78,6 +78,7 @@ jobs:
         run: |
           if [[ ${{ matrix.name }} =~ ^linux ]]; then
             export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
+            export BUILD_LOCAL_UCL=1
             bash ./.github/travis_build.sh
           fi
 
