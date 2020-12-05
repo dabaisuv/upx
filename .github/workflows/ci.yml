@@ -23,7 +23,7 @@ jobs:
           uname -a; pwd; id; umask
           export DEBIAN_FRONTEND=noninteractive
           sudo dpkg --add-architecture i386
-          sudo apt-get -yq install libmpfr4:i386 zlib1g:i386
+          sudo apt-get install -y libc6:i386 libgmp10:i386 libmpfr4:i386 zlib1g:i386
           cd ..; mkdir -p deps; cd deps
           wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
       - name: 'Checkout code'
@@ -55,7 +55,8 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             if [[ ${{ matrix.C }} =~ ^(clang|gcc).*-m32$ ]]; then
               sudo dpkg --add-architecture i386
-              sudo apt-get -yq install g++-multilib zlib1g-dev:i386
+              sudo apt-get update
+              sudo apt-get install -y g++-multilib zlib1g-dev:i386
             fi
           fi
 
