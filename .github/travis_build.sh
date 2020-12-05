@@ -106,7 +106,7 @@ if [[ $BUILD_LOCAL_UCL == 1 ]]; then
     cp libucl.a src/.libs
 else
     if [[ ! -f config.status ]]; then
-        $ucl_SRCDIR/configure --enable-static --disable-shared --disable-asm
+        $ucl_SRCDIR/configure --enable-static --disable-shared --disable-asm || { cat config.log; exit 1 }
     fi
     make
 fi
