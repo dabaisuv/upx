@@ -58,6 +58,12 @@ jobs:
             wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
           fi
 
+      - name: 'Rebuild stubs'
+        if: startsWith(matrix.name, 'rebuild-stubs')
+        run: |
+          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
+          bash ./.github/travis_build.sh
+
       - name: 'Build (Linux)'
         if: startsWith(matrix.name, 'linux')
         run: |
