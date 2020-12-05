@@ -42,8 +42,7 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             if [[ $X =~ (^|\+)rebuild-stubs($|\+) || $C =~ ^(clang|gcc).*-m32$ ]]; then
               sudo dpkg --add-architecture i386
-              sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-multilib
-            fi
+              sudo apt-get -yq --no-install-suggests --no-install-recommends install g++-multilib
             fi
           fi
 
