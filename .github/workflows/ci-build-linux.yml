@@ -16,46 +16,63 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-
+  # This workflow contains a single job called "build-and-test"
+  build-and-test:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-20.04, C: clang-10-m64 }
-          - { os: ubuntu-20.04, C: gcc-10-m64 }
-          #- { os: ubuntu-20.04, X: rebuild-stubs }
+          - { name: rebuild-stubs, os: ubuntu-20.04, X: rebuild-stubs }
+          - { name: linux-clang-10-m32, os: ubuntu-20.04, C: clang-10-m32 }
+          #- { name: linux-clang-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      #if: contains(matrix.os, 'ubuntu')
 
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-        with: { submodules: true }
-
-      - name: 'Step: prepare sources'
+      - name: 'Install extra packages'
         run: |
           export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           uname -a; pwd; id; umask
           #cat /etc/os-release || true
           #env
+          if [[ ${{ matrix.os }} =~ ^ubuntu; then
+            export DEBIAN_FRONTEND=noninteractive
+            if [[ $X =~ (^|\+)rebuild-stubs($|\+) || $C =~ ^(clang|gcc).*-m32$ ]]; then
+              sudo dpkg --add-architecture i386
+              sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-multilib
+            fi
+            fi
+          fi
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: 'Checkout code'
+        uses: actions/checkout@v2
+        with: { submodules: true }
+
+      - name: 'Prepare sources'
+        run: |
+          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           cd ..; mkdir -p deps build/github; cd deps
-          wget -q -O - https://github.com/upx/upx/releases/download/v3.00/ucl-1.03.tar.xz | tar -xJ
-          wget -q -O - https://github.com/upx/upx/releases/download/v3.00/zlib-1.2.8.tar.xz | tar -xJ
-          git clone https://github.com/upx/upx-testsuite
+          if [[ $X !=~ rebuild-stubs ]]; then
+            wget -q -O - https://github.com/upx/upx/releases/download/v3.00/ucl-1.03.tar.xz | tar -xJ
+            wget -q -O - https://github.com/upx/upx/releases/download/v3.00/zlib-1.2.8.tar.xz | tar -xJ
+            git clone https://github.com/upx/upx-testsuite
+          fi
           if [[ $X =~ (^|\+)rebuild-stubs($|\+) ]]; then
             wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
           fi
 
-      - name: 'Step: build'
+      - name: 'Build (Linux)'
+        if: startsWith(matrix.name, 'linux')
         run: |
           export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           bash ./.github/travis_build.sh
 
-      - name: 'Step: run testsuite'
+      - name: 'Run testsuite'
+        if: startsWith(matrix.name, 'rebuild-stubs') == false
         run: |
           export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           bash ./.github/travis_testsuite_1.sh
