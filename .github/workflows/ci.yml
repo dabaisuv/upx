@@ -23,7 +23,7 @@ jobs:
           uname -a; pwd; id; umask
           export DEBIAN_FRONTEND=noninteractive
           sudo dpkg --add-architecture i386
-          sudo apt-get install -y libc6:i386 libgmp10:i386 libmpfr4:i386 zlib1g:i386
+          sudo apt-get install -y libc6:i386 libgcc1:i386 libgmp10:i386 libmpfr4:i386 zlib1g:i386
           cd ..; mkdir -p deps; cd deps
           wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
       - name: 'Checkout code'
@@ -43,7 +43,9 @@ jobs:
       matrix:
         include:
           - { name: linux-clang-10-m32, os: ubuntu-20.04, C: clang-10-m32 }
-          #- { name: linux-clang-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
+          - { name: linux-clang-10-m64, os: ubuntu-20.04, C: clang-10-m64 }
+          - { name: linux-gcc-10-m32, os: ubuntu-20.04, C: gcc-10-m32 }
+          - { name: linux-gcc-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
 
     steps:
       - name: 'Install extra packages'
