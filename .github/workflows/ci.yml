@@ -1,7 +1,7 @@
 # Support for GitHub Actions -- https://github.com/features/actions
 # Copyright (C) Markus Franz Xaver Johannes Oberhumer
 
-name: GitHub CI
+name: 'CI'
 
 on:
   push:
@@ -14,7 +14,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  rebuild-stubs:
+    name: 'Rebuild stubs'
+    runs-on: ubuntu-16.04
+    steps:
+      - name: 'Install extra packages'
+        run: |
+          uname -a; pwd; id; umask
+          export DEBIAN_FRONTEND=noninteractive
+          sudo dpkg --add-architecture i386
+          sudo apt-get -yq install libmpfr4:i386 zlib1g:i386
+          cd ..; mkdir -p deps; cd deps
+          wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
+      - name: 'Checkout code'
+        uses: actions/checkout@v2
+        with: { submodules: false }
+      - name: 'Rebuild and verify stubs'
+        run: |
+          export C=gcc X=rebuild-stubs TRAVIS_OS_NAME=linux
+          bash ./.github/travis_build.sh
+
+  build-and-test-upx:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
@@ -22,23 +42,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: rebuild-stubs, os: ubuntu-16.04, X: rebuild-stubs }
           - { name: linux-clang-10-m32, os: ubuntu-20.04, C: clang-10-m32 }
           #- { name: linux-clang-10-m64, os: ubuntu-20.04, C: gcc-10-m64 }
 
     steps:
       - name: 'Install extra packages'
         run: |
-          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           uname -a; pwd; id; umask
           #cat /etc/os-release || true
           #env
           if [[ ${{ matrix.os }} =~ ^ubuntu ]]; then
             export DEBIAN_FRONTEND=noninteractive
-            if [[ $X =~ (^|\+)rebuild-stubs($|\+) || $C =~ ^(clang|gcc).*-m32$ ]]; then
+            if [[ ${{ matrix.C }} =~ ^(clang|gcc).*-m32$ ]]; then
               sudo dpkg --add-architecture i386
-              sudo apt-get -yq --no-install-suggests --no-install-recommends install \
-                g++-multilib libmpfr-dev:i386 zlib1g-dev:i386
+              sudo apt-get -yq install g++-multilib zlib1g-dev:i386
             fi
           fi
 
@@ -48,31 +65,19 @@ jobs:
 
       - name: 'Prepare sources'
         run: |
-          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           cd ..; mkdir -p deps build/github; cd deps
-          if [[ $X != rebuild-stubs ]]; then
-            wget -q -O - https://github.com/upx/upx/releases/download/v3.00/ucl-1.03.tar.xz | tar -xJ
-            wget -q -O - https://github.com/upx/upx/releases/download/v3.00/zlib-1.2.8.tar.xz | tar -xJ
-            git clone https://github.com/upx/upx-testsuite
-          fi
-          if [[ $X =~ (^|\+)rebuild-stubs($|\+) ]]; then
-            wget -q -O - https://github.com/upx/upx-stubtools/releases/download/v20160918/bin-upx-20160918.tar.xz | tar -xJ
-          fi
+          wget -q -O - https://github.com/upx/upx/releases/download/v3.00/ucl-1.03.tar.xz | tar -xJ
+          wget -q -O - https://github.com/upx/upx/releases/download/v3.00/zlib-1.2.8.tar.xz | tar -xJ
+          git clone https://github.com/upx/upx-testsuite
 
-      - name: 'Rebuild stubs'
-        if: startsWith(matrix.name, 'rebuild-stubs')
+      - name: 'Build'
         run: |
-          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
-          bash ./.github/travis_build.sh
-
-      - name: 'Build (Linux)'
-        if: startsWith(matrix.name, 'linux')
-        run: |
-          export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
-          bash ./.github/travis_build.sh
+          if [[ ${{ matrix.name }} =~ ^linux ]]; then
+            export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
+            bash ./.github/travis_build.sh
+          fi
 
       - name: 'Run testsuite'
-        if: startsWith(matrix.name, 'rebuild-stubs') == false
         run: |
           export C=${{matrix.C}} B=${{matrix.B}} T=${{matrix.T}} X=${{matrix.X}} TRAVIS_OS_NAME=linux
           bash ./.github/travis_testsuite_1.sh
